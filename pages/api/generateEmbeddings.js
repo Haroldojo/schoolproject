@@ -1,5 +1,4 @@
 // pages/api/embeddings.js
-import { OpenAIEmbeddings } from "langchain/embeddings";
 import { connectDB } from "../../lib/db";
 import { cosineSimilarity } from "../../lib/utils"; // we'll write this helper
 
