@@ -193,7 +193,7 @@ export default function AddSchool() {
             Fill in the details below to register a new school
           </p>
           <p className="text-white/60 text-sm mt-2">
-            📸 Images will be automatically converted to JPEG format and resized
+            Images will be automatically converted to JPEG format and resized
             for optimal storage
           </p>
         </div>
@@ -437,7 +437,7 @@ export default function AddSchool() {
                 />
               </div>
               <p className="text-white/60 text-xs">
-                📝 Supported formats: PNG, JPG, WebP, GIF. Will be converted to
+                Supported formats: PNG, JPG, WebP, GIF. Will be converted to
                 JPEG and resized to 800x600px max.
               </p>
               {errors.image && (
@@ -505,19 +505,8 @@ export default function AddSchool() {
         {/* Enhanced Debug Info */}
         <div className="mt-8 bg-black/20 backdrop-blur rounded-xl p-4 border border-white/10">
           <h3 className="text-white font-semibold mb-2">
-            🔧 Debug Information:
           </h3>
           <div className="text-white/70 text-sm space-y-1">
-            <p>
-              • Check browser console (F12) for detailed logs during form
-              submission
-            </p>
-            <p>• Image conversion details and compression ratios are logged</p>
-            <p>• Images are converted to JPEG format with 80% quality</p>
-            <p>• Large images are resized to maximum 800x600 pixels</p>
-            <p>
-              • Final images are saved to public/images/ directory as .jpg files
-            </p>
           </div>
         </div>
       </div>
