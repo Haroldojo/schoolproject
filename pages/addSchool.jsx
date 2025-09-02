@@ -12,56 +12,6 @@ export default function AddSchool() {
     formState: { errors },
   } = useForm();
 
-  // Utility function to convert any image to JPEG
-  const convertToJPEG = (file, quality = 0.8) => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const img = new Image();
-
-      img.onload = () => {
-        // Set canvas dimensions (resize if too large)
-        const maxWidth = 800;
-        const maxHeight = 600;
-        let { width, height } = img;
-
-        // Calculate new dimensions while maintaining aspect ratio
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = width * ratio;
-          height = height * ratio;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        // Draw image on canvas
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convert to JPEG blob
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              // Create a new File object with .jpg extension
-              const fileName = file.name.split(".")[0] + ".jpg";
-              const jpegFile = new File([blob], fileName, {
-                type: "image/jpeg",
-              });
-              resolve(jpegFile);
-            } else {
-              reject(new Error("Failed to convert image"));
-            }
-          },
-          "image/jpeg",
-          quality
-        );
-      };
-
-      img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   const onSubmit = async (data) => {
     console.log("🚀 Form submission started");
     console.log("📝 Form data:", data);
@@ -70,70 +20,20 @@ export default function AddSchool() {
     setSubmitStatus(null);
 
     try {
-      // Handle file upload properly
-      const formData = new FormData();
-
-      // Handle image conversion and upload
-      if (data.image && data.image[0]) {
-        const originalFile = data.image[0];
-        console.log("📎 Original file details:", {
-          name: originalFile.name,
-          size: originalFile.size,
-          type: originalFile.type,
-        });
-
-        try {
-          // Convert to JPEG
-          setSubmitStatus({
-            type: "info",
-            message: "Converting image to JPEG format...",
-          });
-
-          const jpegFile = await convertToJPEG(originalFile, 0.8);
-          console.log("🖼️ Converted to JPEG:", {
-            name: jpegFile.name,
-            size: jpegFile.size,
-            type: jpegFile.type,
-            originalSize: originalFile.size,
-            compressionRatio:
-              (
-                ((originalFile.size - jpegFile.size) / originalFile.size) *
-                100
-              ).toFixed(1) + "%",
-          });
-
-          formData.append("image", jpegFile);
-
-          setSubmitStatus({
-            type: "info",
-            message: "Image converted successfully! Uploading school data...",
-          });
-        } catch (conversionError) {
-          console.error("❌ Image conversion failed:", conversionError);
-          // Fallback: use original file
-          console.log("⚠️ Using original file as fallback");
-          formData.append("image", originalFile);
-
-          setSubmitStatus({
-            type: "warning",
-            message: "Image conversion failed, using original format...",
-          });
-        }
-      }
-
-      // Append all other form fields
-      Object.keys(data).forEach((key) => {
-        if (key !== "image") {
-          formData.append(key, data[key]);
-          console.log(`✅ Added field ${key}:`, data[key]);
-        }
+      setSubmitStatus({
+        type: "info",
+        message: "Uploading school data...",
       });
 
       console.log("🌐 Sending POST request to /api/schools");
 
+      // Send as JSON, not FormData
       const res = await fetch("/api/schools", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data), // Send as JSON
       });
 
       console.log("📡 Response status:", res.status);
@@ -148,11 +48,13 @@ export default function AddSchool() {
 
         setSubmitStatus({
           type: "success",
-          message: "School added successfully! Image saved as JPEG format.",
+          message: "School added successfully!",
         });
         reset(); // Clear form on success
       } else {
-        const errorData = await res.text().catch(() => "Unknown error");
+        const errorData = await res
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         console.error("❌ Error response:", {
           status: res.status,
           statusText: res.statusText,
@@ -161,7 +63,7 @@ export default function AddSchool() {
 
         setSubmitStatus({
           type: "error",
-          message: `Failed to add school (${res.status}: ${res.statusText})`,
+          message: errorData.error || `Failed to add school (${res.status})`,
         });
       }
     } catch (error) {
@@ -191,10 +93,6 @@ export default function AddSchool() {
           </h1>
           <p className="text-white/80 text-lg">
             Fill in the details below to register a new school
-          </p>
-          <p className="text-white/60 text-sm mt-2">
-            Images will be automatically converted to JPEG format and resized
-            for optimal storage
           </p>
         </div>
 
@@ -390,7 +288,7 @@ export default function AddSchool() {
                 />
                 {errors.contact && (
                   <p className="text-red-200 text-sm flex items-center">
-                    <span className="mr-1"></span>
+                    <span className="mr-1">⚠️</span>
                     {errors.contact.message}
                   </p>
                 )}
@@ -421,24 +319,26 @@ export default function AddSchool() {
               </div>
             </div>
 
-            {/* Image Upload */}
+            {/* Image URL */}
             <div className="space-y-2">
               <label className="text-white font-semibold text-sm uppercase tracking-wide">
-                School Image
+                School Image URL
               </label>
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*"
-                  {...register("image", {
-                    required: "School image is required",
-                  })}
-                  className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur border border-white/30 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-gradient-to-r file:from-blue-500 file:to-purple-500 file:text-white file:cursor-pointer hover:file:from-blue-600 hover:file:to-purple-600 transition-all duration-300"
-                />
-              </div>
+              <input
+                type="url"
+                placeholder="Enter public image URL (https://...)"
+                {...register("image", {
+                  required: "School image URL is required",
+                  pattern: {
+                    value: /^https?:\/\/.+/i,
+                    message:
+                      "Enter a valid URL starting with http:// or https://",
+                  },
+                })}
+                className="w-full px-4 py-3 rounded-xl bg-white/20 backdrop-blur border border-white/30 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-300"
+              />
               <p className="text-white/60 text-xs">
-                Supported formats: PNG, JPG, WebP, GIF. Will be converted to
-                JPEG and resized to 800x600px max.
+                Enter any public image URL (Google Drive, Imgur, etc.)
               </p>
               {errors.image && (
                 <p className="text-red-200 text-sm flex items-center">
@@ -494,19 +394,10 @@ export default function AddSchool() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
-                  <span className="mr-2"></span>
                   Add School
                 </div>
               )}
             </button>
-          </div>
-        </div>
-
-        {/* Enhanced Debug Info */}
-        <div className="mt-8 bg-black/20 backdrop-blur rounded-xl p-4 border border-white/10">
-          <h3 className="text-white font-semibold mb-2">
-          </h3>
-          <div className="text-white/70 text-sm space-y-1">
           </div>
         </div>
       </div>

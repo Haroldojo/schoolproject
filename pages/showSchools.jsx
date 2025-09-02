@@ -67,7 +67,13 @@ export default function ShowSchools() {
                   <div className="relative w-full aspect-[4/3] overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent z-10"></div>
                     <img
-                      src={school.image}
+                      src={
+                        school.image.includes("file/d/")
+                          ? `https://drive.google.com/thumbnail?id=${
+                              school.image.split("/d/")[1].split("/")[0]
+                            }`
+                          : school.image
+                      }
                       alt={school.name}
                       className="w-full h-full object-center object-cover transition-transform duration-500 group-hover:scale-110"
                       style={{
@@ -77,10 +83,11 @@ export default function ShowSchools() {
                         borderRadius: "12px 12px 0 0",
                       }}
                       onError={(e) => {
-                        e.target.src =
-                          "https://via.placeholder.com/400x300?text=School+Image";
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/400x300?text=No+Image";
                       }}
                     />
+
                     {/* Floating Badge */}
                     <div className="absolute top-4 right-4 z-20">
                       <div className="bg-gradient-to-r from-emerald-400 to-cyan-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">

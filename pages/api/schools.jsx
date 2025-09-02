@@ -1,51 +1,5 @@
 // pages/api/schools.js
 import { connectDB } from "../../lib/db";
-import multer from "multer";
-import path from "path";
-
-// Configure multer for file uploads
-const upload = multer({
-  dest: "public/schoolImages",
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    console.log("File filter processing:", {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-    });
-
-    // Check if file is an image
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(
-      path.extname(file.originalname).toLowerCase()
-    );
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (mimetype && extname) {
-      console.log("File validation passed");
-      return cb(null, true);
-    } else {
-      console.log("File validation failed - not an allowed image type");
-      cb(new Error("Only image files are allowed!"));
-    }
-  },
-});
-
-// Helper function to run middleware
-function runMiddleware(req, res, fn) {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) {
-        console.error("Middleware error:", result);
-        return reject(result);
-      }
-      console.log("Middleware executed successfully");
-      return resolve(result);
-    });
-  });
-}
 
 export default async function handler(req, res) {
   console.log(
@@ -58,13 +12,8 @@ export default async function handler(req, res) {
   try {
     if (req.method === "POST") {
       console.log("Processing POST request for adding school");
-      // Handle file upload
-      console.log("Running multer middleware for file upload...");
-      await runMiddleware(req, res, upload.single("image"));
-      console.log("File upload middleware completed");
-      console.log("Uploaded file details:", req.file);
 
-      const { name, address, city, state, contact, email_id } = req.body;
+      const { name, address, city, state, contact, email_id, image } = req.body;
       console.log("Request body data:", {
         name,
         address,
@@ -72,6 +21,7 @@ export default async function handler(req, res) {
         state,
         contact,
         email_id,
+        image,
       });
 
       // Validate required fields
@@ -94,16 +44,17 @@ export default async function handler(req, res) {
       }
       console.log("Email validation passed");
 
-      // Check if file was uploaded
-      console.log("Checking if file was uploaded...");
-      if (!req.file) {
-        console.log("File upload failed: No file received");
-        return res.status(400).json({ error: "Image file is required" });
+      // Validate image URL if provided
+      if (image) {
+        console.log("Validating image URL format...");
+        try {
+          new URL(image);
+          console.log("Image URL validation passed");
+        } catch (urlError) {
+          console.log("Image URL validation failed:", image);
+          return res.status(400).json({ error: "Invalid image URL format" });
+        }
       }
-      console.log("File upload validation passed");
-
-      const imagePath = `/schoolImages/${req.file.filename}`;
-      console.log("Image path generated:", imagePath);
 
       let db;
       try {
@@ -117,18 +68,18 @@ export default async function handler(req, res) {
           city,
           state,
           contact,
-          imagePath,
+          image || null,
           email_id,
         ]);
         await db.execute(
           "INSERT INTO schools (name, address, city, state, contact, image, email_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [name, address, city, state, contact, imagePath, email_id]
+          [name, address, city, state, contact, image || null, email_id]
         );
         console.log("School data inserted successfully");
 
         res.status(201).json({
           message: "School added successfully!",
-          imagePath: imagePath,
+          imageUrl: image || null,
         });
         console.log("Success response sent to client");
       } catch (dbError) {
@@ -198,21 +149,6 @@ export default async function handler(req, res) {
     console.error("Request URL:", req.url);
     console.error("========================");
 
-    // Handle multer errors
-    if (error.code === "LIMIT_FILE_SIZE") {
-      console.log("File size limit exceeded");
-      return res
-        .status(400)
-        .json({ error: "File size too large. Maximum 5MB allowed." });
-    }
-
-    if (error.message === "Only image files are allowed!") {
-      console.log("Invalid file type uploaded");
-      return res
-        .status(400)
-        .json({ error: "Only image files (JPEG, JPG, PNG, GIF) are allowed." });
-    }
-
     console.log("Sending generic server error response");
     res.status(500).json({ error: `Server error: ${error.message}` });
   } finally {
@@ -224,8 +160,11 @@ export default async function handler(req, res) {
   }
 }
 
+// Regular bodyParser is fine since we're not handling file uploads
 export const config = {
   api: {
-    bodyParser: false, // Required for multer
+    bodyParser: {
+      sizeLimit: "1mb",
+    },
   },
 };
