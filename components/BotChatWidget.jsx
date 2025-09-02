@@ -18,11 +18,22 @@ export default function BotChatWidget() {
 
         {isOpen && (
           <div
-            className="absolute bottom-16 right-0 w-[350px] max-h-[500px] rounded-xl shadow-xl border border-gray-700 
-                     bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900"
+            className="fixed bottom-16 right-5 w-[350px] h-[500px] rounded-xl shadow-xl border border-gray-700 
+                bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col"
             style={{ zIndex: 1000 }}
           >
-            <GroqChatLLM />
+            {/* Header (optional, stays fixed at top of box) */}
+            <div className="p-3 border-b border-gray-600 text-white font-semibold flex justify-between items-center">
+              <span>Groq Chat LLM</span>
+              <button onClick={() => setIsOpen(false)} className="text-sm">
+                ×
+              </button>
+            </div>
+
+            {/* Messages (only this should scroll) */}
+            <div className="flex-1 overflow-y-auto p-2">
+              <GroqChatLLM />
+            </div>
           </div>
         )}
       </div>
